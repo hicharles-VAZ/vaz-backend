@@ -1,4 +1,5 @@
-import { Controller, Post, UseGuards, Body } from '@nestjs/common'
+import { Controller, Post, UseGuards, Body, Req } from '@nestjs/common'
+import { Request } from 'express'
 import { AuthService } from './auth.service'
 import { LocalAuthGuard } from './guards/local-auth.guard'
 import { RefreshAuthGuard } from './guards/refresh-auth.guard'
@@ -19,8 +20,10 @@ export class AuthController {
 
     @UseGuards(RefreshAuthGuard)
     @Post('refresh')
-    refresh(@Body() _: RefreshDto, @CurrentUser() user: any) {
-        return this.authService.refresh(user)
+    refresh(@Body() dto: RefreshDto, @CurrentUser() user: any, @Req() req: Request) {
+        const header = req.headers.authorization || ''
+        const token = header.replace('Bearer ', '').trim()
+        return this.authService.refresh(user, token || dto.refreshToken)
     }
 
     @Post('logout')
