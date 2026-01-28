@@ -8,39 +8,53 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  password  String
-  name      String
-  active    Boolean   @default(true)
-  roles     Role[]    @relation("UserRoles")
-  auditLogs AuditLog[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  name          String
+  active        Boolean        @default(true)
+  roles         Role[]         @relation("UserRoles")
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model Role {
-  id          String        @id @default(uuid())
-  name        String        @unique
+  id          String       @id @default(uuid())
+  name        String       @unique
   description String
-  users       User[]        @relation("UserRoles")
+  users       User[]       @relation("UserRoles")
   permissions Permission[] @relation("RolePermissions")
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 model Permission {
-  id          String  @id @default(uuid())
-  name        String  @unique
+  id          String   @id @default(uuid())
+  name        String   @unique
   description String
-  roles       Role[]  @relation("RolePermissions")
+  roles       Role[]   @relation("RolePermissions")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  revokedAt DateTime?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
 model Sector {
   id          String   @id @default(uuid())
-  name        String
+  name        String   @unique
   description String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -59,52 +73,61 @@ model Asset {
   name        String
   description String?
   categoryId  String?
-  category    AssetCategory? @relation(fields: [categoryId], references: [id])
+  category    AssetCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   histories   AssetHistory[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+
+  @@index([categoryId])
 }
 
 model AssetHistory {
   id          String   @id @default(uuid())
   assetId     String
-  asset       Asset    @relation(fields: [assetId], references: [id])
+  asset       Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
   action      String
   description String?
   metadata    Json?
   createdAt   DateTime @default(now())
+
+  @@index([assetId])
 }
 
 model Automation {
-  id         String                 @id @default(uuid())
-  name       String
+  id          String                @id @default(uuid())
+  name        String                @unique
   description String?
-  enabled    Boolean                @default(false)
-  notify     Boolean                @default(false)
-  channel    String
-  recipients String[]               @db.Text[]
-  cron       String?
-  executions AutomationExecution[]
-  createdAt  DateTime               @default(now())
-  updatedAt  DateTime               @updatedAt
+  enabled     Boolean               @default(false)
+  notify      Boolean               @default(false)
+  channel     String
+  recipients  String[]              @db.Text
+  cron        String?
+  executions  AutomationExecution[]
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
 }
 
 model AutomationExecution {
   id           String     @id @default(uuid())
   automationId String
-  automation   Automation @relation(fields: [automationId], references: [id])
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
   status       String
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+
+  @@index([automationId])
 }
 
 model AuditLog {
   id        String   @id @default(uuid())
   userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   action    String
   entity    String
   entityId  String?
   metadata  Json?
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }
