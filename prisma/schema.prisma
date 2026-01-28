@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  name      String
+  active    Boolean   @default(true)
+  roles     Role[]    @relation("UserRoles")
+  auditLogs AuditLog[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Role {
+  id          String        @id @default(uuid())
+  name        String        @unique
+  description String
+  users       User[]        @relation("UserRoles")
+  permissions Permission[] @relation("RolePermissions")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Permission {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String
+  roles       Role[]  @relation("RolePermissions")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Sector {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AssetCategory {
+  id        String   @id @default(uuid())
+  name      String
+  assets    Asset[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Asset {
+  id          String         @id @default(uuid())
+  name        String
+  description String?
+  categoryId  String?
+  category    AssetCategory? @relation(fields: [categoryId], references: [id])
+  histories   AssetHistory[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model AssetHistory {
+  id          String   @id @default(uuid())
+  assetId     String
+  asset       Asset    @relation(fields: [assetId], references: [id])
+  action      String
+  description String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+}
+
+model Automation {
+  id         String                 @id @default(uuid())
+  name       String
+  description String?
+  enabled    Boolean                @default(false)
+  notify     Boolean                @default(false)
+  channel    String
+  recipients String[]               @db.Text[]
+  cron       String?
+  executions AutomationExecution[]
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+}
+
+model AutomationExecution {
+  id           String     @id @default(uuid())
+  automationId String
+  automation   Automation @relation(fields: [automationId], references: [id])
+  status       String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}

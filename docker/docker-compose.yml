@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: vaz-postgres
+    environment:
+      POSTGRES_DB: vaz
+      POSTGRES_USER: vaz
+      POSTGRES_PASSWORD: vaz
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    container_name: vaz-backend
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://vaz:vaz@postgres:5432/vaz
+      JWT_SECRET: changeme
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_SECRET: changeme_refresh
+      JWT_REFRESH_EXPIRES_IN: 7d
+      STORAGE_DRIVER: local
+      SMTP_HOST: smtp
+      SMTP_PORT: 587
+      SMTP_USER: no-reply@vazdesenvolvimento.com.br
+      SMTP_PASS: password
+      TEAMS_TENANT_ID: tenant
+      TEAMS_CLIENT_ID: client
+      TEAMS_CLIENT_SECRET: secret
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    volumes:
+      - ../:/app
+    command: npm run start:dev
+
+volumes:
+  postgres_data:
